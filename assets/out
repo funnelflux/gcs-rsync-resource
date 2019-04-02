@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -e
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+##
+payload=$(mktemp $TMPDIR/concourse-gcs-rsync-resource-request.XXXXXX)
+
+cat > $payload <&0
+
+json_key=$(jq -r '.source.json_key' < $payload)
+bucket=$(jq -r '.source.bucket' < $payload)
+remote_path=$(jq -r '.source.remote_path' < $payload)
+local_path=$(jq -r '.params.local_path' < $payload)
+
+##
+if [ -z "$bucket" ]; then
+  echo "invalid payload (missing bucket)"
+  exit 1
+fi
+
+if [ -z "$remote_path" ]; then
+  echo "invalid payload (missing remote_path)"
+  exit 1
+fi
+
+if [ -z "$local_path" ]; then
+  echo "invalid payload (missing local_path)"
+  exit 1
+fi
+
+##
+echo "${json_key}" > $TMPDIR/google_service_account.json
+gcloud auth activate-service-account --key-file="$TMPDIR/google_service_account.json"
+pushd "$local_path" > /dev/null
+  gsutil -m rsync -d -r . "gs://$bucket/$remote_path"
+popd
