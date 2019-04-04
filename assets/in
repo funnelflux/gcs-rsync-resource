@@ -7,50 +7,16 @@ exec 1>&2 # redirect all output to stderr for logging
 
 source $(dirname $0)/common.sh
 
-##
 destination=$1
-
 if [ -z "$destination" ]; then
   echo "usage: $0 <path/to/destination>"
   exit 1
 fi
+export DESTINATION_DIR=$destination
 
-cd $destination
-
-##
 payload=$(mktemp $TMPDIR/gcs-rsync-resource-request.XXXXXX)
-
 cat > $payload <&0
 
-bucket=$(jq -r '.source.bucket' < $payload)
-remote_path=$(jq -r '.source.remote_path' < $payload)
-json_key=$(jq -r '.source.json_key' < $payload)
-local_path=$(jq -r '.params.local_path' < $payload)
-
-##
-if [ -z "$bucket" ]; then
-  echo "invalid payload (missing bucket)"
-  exit 1
-fi
-
-if [ -z "$remote_path" ]; then
-  echo "invalid payload (missing remote_path)"
-  exit 1
-fi
-
-if [ -z "$local_path" ]; then
-  echo "invalid payload (missing local_path)"
-  exit 1
-fi
-
-mkdir -p "$local_path"
-
-##
-echo "${json_key}" > $TMPDIR/google_service_account.json
-gcloud auth activate-service-account --key-file="$TMPDIR/google_service_account.json" --no-user-output-enabled
-pushd "$local_path" > /dev/null
-  gsutil -m rsync -d -r "gs://$bucket/$remote_path" . &> /dev/null
-  # TODO metadata
-popd
-
-check_version >&3
+parse_payload $payload
+rsync "gs://${BUCKET}/${REMOTE_PATH}" "."
+print_version >&3

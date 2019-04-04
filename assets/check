@@ -8,11 +8,7 @@ exec 1>&2 # redirect all output to stderr for logging
 source $(dirname $0)/common.sh
 
 payload=$(mktemp $TMPDIR/gcs-rsync-resource-request.XXXXXX)
-
 cat > $payload <&0
 
-bucket=$(jq -r '.source.bucket' < $payload)
-remote_path=$(jq -r '.source.remote_path' < $payload)
-json_key=$(jq -r '.source.json_key' < $payload)
-
-check_version >&3
+parse_payload $payload
+print_version >&3
