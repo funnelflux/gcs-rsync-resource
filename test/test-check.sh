@@ -2,15 +2,21 @@
 
 set -e
 
-it_can_list_files_with_on_remote_path() {
+source $(dirname $0)/helpers.sh
 
-  echo $resource_dir
+export BUCKET_NAME=infrastructure.energumen.io
+export REMOTE_PATH=control-plane/state
+export GCP_SERVICE_ACCOUNT_KEY=~/.config/gcloud/bbl-testbed.key.json
+
+it_can_list_bucket_files_on_remote_path() {
 
   jq -n "{
     source: {
-      bucket: ...,
-      remote_path: ...,
-      json_key: ...
+      bucket: $(echo $BUCKET_NAME | jq -R .),
+      remote_path: $(echo $REMOTE_PATH | jq -R .),
+      json_key: $(cat $GCP_SERVICE_ACCOUNT_KEY)
     }
   }" | $resource_dir/check | tee /dev/stderr
 }
+
+run it_can_list_bucket_files_on_remote_path
