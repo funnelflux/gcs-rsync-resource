@@ -3,7 +3,6 @@
 set -e
 
 function print_version() {
-  parse_payload
   authenticate_cli
 
   gsutil ls -l "gs://${BUCKET}/${REMOTE_PATH}/**" &> $TMPDIR/check.log
