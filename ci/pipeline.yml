@@ -1,0 +1,21 @@
+resources:
+  - name: gcs-rsync-resource-src
+    type: git
+    source:
+      uri: https://github.com/mouellet/gcs-rsync-resource.git
+      branch: master
+
+  - name: gcs-rsync-resource-image
+    type: docker-image
+    source:
+      repository: energumen/gcs-rsync-resource
+      username: ((dockerhub_username))
+      password: ((dockerhub_password))
+
+jobs:
+- name: build-image
+  plan:
+  - get: gcs-rsync-resource-src
+  - put: gcs-rsync-resource-image
+    params:
+      build: gcs-rsync-resource-src
