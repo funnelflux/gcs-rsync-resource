@@ -1,8 +1,15 @@
 FROM google/cloud-sdk:slim
 
-ADD assets/ /opt/resource/
+RUN \
+      apt-get update && \
+      apt-get -qqy install --fix-missing \
+            wget \
+      && \
+      apt-get clean
 
 # Install jq
 RUN wget https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 && \
   mv jq-linux64 /usr/local/bin/jq && \
   chmod +x /usr/local/bin/jq
+
+ADD assets/ /opt/resource/
