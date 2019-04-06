@@ -57,7 +57,7 @@ gcloud auth activate-service-account --key-file="${json_key}" --no-user-output-e
 
 mkdir -p $local_path
 pushd "${local_path}" > /dev/null
-  gsutil -m rsync -d -r "gs://${bucket}/${remote_path}" "." &> /dev/null
+  gsutil -m rsync -d -r "gs://${bucket}/${remote_path}" "."
 popd
 
 echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"} }" >&3

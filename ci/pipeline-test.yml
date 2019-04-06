@@ -1,0 +1,25 @@
+resource_types:
+- name: gcs-rsync-resource
+  type: docker-image
+  source:
+    repository: energumen/gcs-rsync-resource
+
+resources:
+  - name: remote-state
+    type: gcs-rsync-resource
+    source:
+      bucket: ((bucket_name))
+      remote_path: ((remote_path))
+      json_key: ((json_key))
+
+jobs:
+- name: test-check
+  plan:
+  - get: remote-state
+    params:
+      local_path: state
+  - put: remote-state
+    params:
+      local_path: state
+    get_params:
+      local_path: state
