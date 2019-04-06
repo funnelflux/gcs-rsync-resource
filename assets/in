@@ -60,4 +60,4 @@ pushd "${local_path}" > /dev/null
   gsutil -m rsync -d -r "gs://${bucket}/${remote_path}" "." &> /dev/null
 popd
 
-echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"} }" | jq --slurp . >&3
+echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"} }" >&3

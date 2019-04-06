@@ -41,4 +41,4 @@ json_key="$TMPDIR/google_service_account.json"
 
 gcloud auth activate-service-account --key-file="${json_key}" --no-user-output-enabled
 
-echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"} }" | jq --slurp . >&3
+echo "{ \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"}" | jq --slurp . >&3
