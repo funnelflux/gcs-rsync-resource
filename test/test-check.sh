@@ -4,11 +4,7 @@ set -e
 
 source $(dirname $0)/helpers.sh
 
-export BUCKET_NAME=infrastructure.energumen.io
-export REMOTE_PATH=control-plane/state
-export GCP_SERVICE_ACCOUNT_KEY=~/.config/gcloud/bbl-testbed.key.json
-
-it_can_list_bucket_files_on_remote_path() {
+it_can_check_version() {
 
   jq -n "{
     source: {
@@ -19,4 +15,4 @@ it_can_list_bucket_files_on_remote_path() {
   }" | $resource_dir/check | tee /dev/stderr
 }
 
-run it_can_list_bucket_files_on_remote_path
+run it_can_check_version

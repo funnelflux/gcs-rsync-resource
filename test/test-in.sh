@@ -4,11 +4,6 @@ set -e
 
 source $(dirname $0)/helpers.sh
 
-export BUCKET_NAME=infrastructure.energumen.io
-export REMOTE_PATH=control-plane/state
-export LOCAL_PATH=state
-export GCP_SERVICE_ACCOUNT_KEY=~/.config/gcloud/bbl-testbed.key.json
-
 it_can_sync_bucket_remote_path() {
 
   local destination
