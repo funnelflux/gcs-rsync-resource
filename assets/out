@@ -11,13 +11,13 @@ if [ $PLATFORM = "Darwin" ]; then
   MD5_TOOL="md5"
 fi
 
-destination=$1
-if [ -z "$destination" ]; then
-  echo "usage: $0 <path/to/destination>"
+source=$1
+if [ -z "$source" ]; then
+  echo "usage: $0 <path/to/source>"
   exit 1
 fi
 
-cd $destination
+cd $source
 
 payload=$(mktemp $TMPDIR/gcs-rsync-resource-request.XXXXXX)
 
@@ -57,7 +57,7 @@ gcloud auth activate-service-account --key-file="${json_key}" --no-user-output-e
 
 mkdir -p $local_path
 pushd "${local_path}" > /dev/null
-  gsutil -m rsync -d -r -n "." "gs://${bucket}/${remote_path}" 
+  gsutil -m rsync -d -r -n "." "gs://${bucket}/${remote_path}"
 popd
 
 echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"} }" >&3
