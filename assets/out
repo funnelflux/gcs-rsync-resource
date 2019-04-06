@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -e -x
 
 exec 3>&1 # make stdout available as fd 3 for the result
 exec 1>&2 # redirect all output to stderr for logging
@@ -57,17 +57,19 @@ gcloud auth activate-service-account --key-file="${json_key}" --no-user-output-e
 
 mkdir -p $local_path
 pushd "${local_path}" > /dev/null
-  gsutil -m rsync -d -r -n "." "gs://${bucket}/${remote_path}" &> $TMPDIR/metadata
+  gsutil -m rsync -d -r -c -n . "gs://${bucket}/${remote_path}" &> $TMPDIR/metadata
   metadata=$(cat $TMPDIR/metadata \
     | grep -v "$(cat $TMPDIR/metadata | head -n 2)" \
     | awk '{print $2,$3,$5}' \
-    | jq --raw-input --slurp 'split("\n")
-      | .[0:-1]
-      | map(split(" ") | {operation: .[0], source: .[1], destination: .[2]})
-      | group_by(.operation)
-      | map({(.[0].operation|tostring): .}) | add | del(.[][].operation)')
+    | jq -R -s 'try (
+            split("\n") | .[0:-1]
+          | map(split(" ") | {operation: .[0], source: .[1], destination: .[2]})
+          | group_by(.operation)
+          | map({(.[0].operation|tostring): .}) | add
+          | del(.[][].operation))
+        catch empty')
 
-  gsutil -m rsync -d -r -n "." "gs://${bucket}/${remote_path}"
+  gsutil -m rsync -d -r -c -n . "gs://${bucket}/${remote_path}"
 popd
 
 echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"}, \"metadata\": [ "$metadata" ] }" >&3
