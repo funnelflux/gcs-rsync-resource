@@ -16,10 +16,6 @@ jobs:
 - name: test-check
   plan:
   - get: remote-state
-    params:
-      local_path: state
   - put: remote-state
     params:
-      local_path: state
-    get_params:
-      local_path: state
+      dry_run: true
