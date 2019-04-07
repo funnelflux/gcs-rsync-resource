@@ -27,6 +27,7 @@ cat > $payload <&0
 bucket=$(jq -r '.source.bucket // ""' < $payload)
 remote_path=$(jq -r '.source.remote_path // ""' < $payload)
 json_key=$(jq -r '.source.json_key // ""' < $payload)
+base_dir=$(jq -r '.params.base_dir // ""' < $payload)
 dry_run=$(jq -r '.params.dry_run // ""' < $payload)
 
 if [ -z "$bucket" ]; then
@@ -57,19 +58,23 @@ fi
 gcloud auth activate-service-account --key-file="${json_key_file}" --no-user-output-enabled
 
 set -x
-gsutil -m rsync -d -r -n "gs://${bucket}/${remote_path}" . &> $TMPDIR/metadata
-metadata=$(cat $TMPDIR/metadata \
-  | grep -v "$(cat $TMPDIR/metadata | head -n 2)" \
-  | awk '{print $2,$3,$5}' \
-  | jq -R -s 'try (
-          split("\n") | .[0:-1]
-        | map(split(" ") | {operation: .[0], source: .[1], destination: .[2]})
-        | group_by(.operation)
-        | map({(.[0].operation|tostring): .}) | add
-        | del(.[][].operation))
-      catch empty')
+pwd
+pushd "${base_dir}"
+  pwd
+  gsutil -m rsync -d -r -n "gs://${bucket}/${remote_path}" . &> $TMPDIR/metadata
+  metadata=$(cat $TMPDIR/metadata \
+    | grep -v "$(cat $TMPDIR/metadata | head -n 2)" \
+    | awk '{print $2,$3,$5}' \
+    | jq -R -s 'try (
+            split("\n") | .[0:-1]
+          | map(split(" ") | {operation: .[0], source: .[1], destination: .[2]})
+          | group_by(.operation)
+          | map({(.[0].operation|tostring): .}) | add
+          | del(.[][].operation))
+        catch empty')
 
-gsutil -m rsync -d -r ${dry_run} "gs://${bucket}/${remote_path}" .
-set +x
+  gsutil -m rsync -d -r ${dry_run} "gs://${bucket}/${remote_path}" .
+  set +x
+popd
 
 echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"}, \"metadata\": [ "$metadata" ] }" >&3

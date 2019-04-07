@@ -19,3 +19,6 @@ jobs:
   - put: remote-state
     params:
       dry_run: true
+      base_dir: remote-state
+    get_params:
+      base_dir: remote-state
