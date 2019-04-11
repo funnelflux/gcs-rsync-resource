@@ -23,6 +23,14 @@ it_can_delete_extra_files_in_destination() {
   local source
   source=$(mktemp -d $TMPDIR_ROOT/in-source.XXXXXX)
 
+  jq -n "{
+    source: {
+      bucket: $(echo $BUCKET_NAME | jq -R .),
+      remote_path: $(echo $REMOTE_PATH | jq -R .),
+      json_key: $(cat $GCP_SERVICE_ACCOUNT_KEY)
+    }
+  }" | $resource_dir/in "$source" | tee /dev/stderr
+
   local extra_file
   extra_file="$source/extra.file"
   touch "$source/extra.file"

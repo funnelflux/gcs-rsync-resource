@@ -44,6 +44,7 @@ if [ -z "$json_key" ]; then
   echo "invalid payload (missing json_key)"
   exit 1
 fi
+
 if [ -f "${json_key}" ]; then
   cp "${json_key}" "$TMPDIR/google_service_account.json"
 else
@@ -51,7 +52,7 @@ else
 fi
 json_key_file="$TMPDIR/google_service_account.json"
 
-if [ -z "${base_dir}" && ! -d "${base_dir}" ]; then
+if [ -z "${base_dir}" ] || [ ! -d "${base_dir}" ]; then
   echo "invalid payload (missing base_dir)"
   exit 1
 fi
@@ -62,22 +63,28 @@ fi
 
 gcloud auth activate-service-account --key-file="${json_key_file}" --no-user-output-enabled
 
-set -x
 pushd "${base_dir}"
   gsutil -m rsync -d -r -n . "gs://${bucket}/${remote_path}" &> $TMPDIR/metadata
   metadata=$(cat $TMPDIR/metadata \
     | grep -v "$(cat $TMPDIR/metadata | head -n 2)" \
-    | awk '{print $2,$3,$5}' \
-    | jq -R -s 'try (
-            split("\n") | .[0:-1]
-          | map(split(" ") | {operation: .[0], source: .[1], destination: .[2]})
-          | group_by(.operation)
-          | map({(.[0].operation|tostring): .}) | add
-          | del(.[][].operation))
-        catch empty')
+    | awk '{print $2,$3,$4,$5,$6}' \
+    | jq -R -s '
+      try (
+        split("\n")[:-1] |
+        [
+          to_entries[] |
+               (select(.value | test("copy")) .value | split(" ") | {operation: .[0], source: .[1], destination: .[3]})
+            // (select(.value | test("remove")) .value | split(" ") | {operation: .[0], file: .[1]})
+            // (select(.value | test("mtime")) .value | split(" ") | {operation: (.[0] + " " + .[1]), file: .[3]})
+            // (select(.value | test("POSIX")) .value | split(" ") | {operation: (.[0] + " " + .[1]), file: .[4]})
+        ] |
+        group_by(.operation) | .[] |
+        map({name: .operation, value: .}) |
+        del(.[].value.operation) | .[]
+      ) catch empty' \
+    | jq -s '. | group_by(.name) | map({"name": .[].name, "value": map(.value) | tostring}) | unique')
 
   gsutil -m rsync -d -r ${dry_run} . "gs://${bucket}/${remote_path}"
-  set +x
 popd
 
-echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"}, \"metadata\": [ "$metadata" ] }" >&3
+echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"}, \"metadata\": "$metadata" }" >&3
