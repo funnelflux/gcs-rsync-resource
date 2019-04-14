@@ -6,9 +6,7 @@ Synchronize content of two buckets/directories
 
 * `bucket`: *Required.* The name of the bucket.
 
-* `remote_path`: *Required.*
-
-* `local_path`: *Required.*
+* `remote_path`: *Required.* The path to a file or directory.
 
 * `json_key`: *Required.* The contents of your GCS Account JSON Key file to use when accessing the bucket. Example:
   ```
@@ -26,19 +24,27 @@ Synchronize content of two buckets/directories
 
 ### `check`: Extract versions from the bucket.
 
--n Causes rsync to run in "dry run" mode, i.e., just outputting what would be copied or deleted without actually doing any copying/deleting.
+The `bucket`'s `remote_path` long listing (including non-current object versions / generations) is used as version.
 
 ### `in`: Fetch the content of the bucket.
 
-Makes the contents under `local_path` the same as the contents under `remote_path` by copying any missing or changed files/objects, and deleting any extra files/objects.
+Makes the contents of the input directory the same as the contents under `remote_path` by copying any missing or changed files/objects, and deleting any extra files/objects.
+
+#### Parameters
+
+* `base_dir`: *Optional.* Base directory in which to place the artifacts.
+* `dry_run`: *Optional.* Causes rsync to run in "dry run" mode, i.e., just outputting what would be copied or deleted without actually doing any copying/deleting.
 
 ### `out`: Upload content to the bucket.
 
-Makes the contents under `remote_path` the same as the contents under `local_path` by copying any missing or changed files/objects, and deleting any extra files/objects.
+Makes the contents under `remote_path` the same as the contents of the input directory by copying any missing or changed files/objects, and deleting any extra files/objects.
+
+#### Parameters
+
+* `base_dir`: *Optional.* Base directory in which to take the artifacts.
+* `dry_run`: *Optional.* Causes rsync to run in "dry run" mode, i.e., just outputting what would be copied or deleted without actually doing any copying/deleting.
 
 ## Example Configuration
-
-### Resource Type
 
 ```yaml
 resource_types:
@@ -46,17 +52,23 @@ resource_types:
     type: docker-image
     source:
       repository: energumen/gcs-rsync-resource
-```
 
-### Resource
-
-``` yaml
 resources:
-  - name: release
+  - name: bucket-folder
     type: gcs-rsync-resource
     source:
       bucket: mybucket
       remote_path: terraform/state
-      local_path: state
       json_key: <GCS-ACCOUNT-JSON-KEY-CONTENTS>
+
+jobs:
+- name: sync-bucket-folder
+  plan:
+  - get: bucket-folder
+  - put: bucket-folder
+    params:
+      dry_run: false
+      base_dir: bucket-folder
+    get_params:
+      base_dir: bucket-folder
 ```
