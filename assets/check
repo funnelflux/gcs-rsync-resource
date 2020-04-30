@@ -43,7 +43,7 @@ gcloud auth activate-service-account --key-file="${json_key}" --no-user-output-e
 
 gsutil ls "gs://${bucket}/${remote_path}/**" 1>&2
 
-metadata_path=$(mktemp $TMPDIR/metadata.XXXXXX)
+metadata_path=$(mktemp $TMPDIR/gcs-rsync-resource-metadata.XXXXXX)
 
 for file in $(gsutil ls "gs://${bucket}/${remote_path}/**")
 do

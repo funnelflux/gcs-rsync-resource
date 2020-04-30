@@ -63,7 +63,7 @@ fi
 
 gcloud auth activate-service-account --key-file="${json_key_file}" --no-user-output-enabled
 
-metadata_path=$(mktemp $TMPDIR/metadata.XXXXXX)
+metadata_path=$(mktemp $TMPDIR/gcs-rsync-resource-metadata.XXXXXX)
 
 pushd "${base_dir}"
   gsutil -m rsync -d -r ${dry_run} . "gs://${bucket}/${remote_path}"
@@ -79,7 +79,7 @@ pushd "${base_dir}"
       try (
         split("\n")[:-1] |
         map([ split(" ")[] | select(. != "") ]) |
-        map( { (.[0]|tostring) : (.[1]|tostring) } )
+        map( { name: .[0], value: .[1] } )
       ) catch empty')
 
   version=$(cat $metadata_path | $MD5_TOOL | cut -d ' ' -f 1)
