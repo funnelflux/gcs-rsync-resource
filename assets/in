@@ -58,28 +58,31 @@ fi
 
 gcloud auth activate-service-account --key-file="${json_key_file}" --no-user-output-enabled
 
+metadata_path=$(mktemp $TMPDIR/metadata.XXXXXX)
+
 pushd "${base_dir}"
-  gsutil -m rsync -d -r -n "gs://${bucket}/${remote_path}" . &> $TMPDIR/metadata
-  metadata=$(cat $TMPDIR/metadata \
-    | grep -v "$(cat $TMPDIR/metadata | head -n 2)" \
-    | awk '{print $2,$3,$4,$5,$6}' \
+
+  gsutil -m rsync -d -r ${dry_run} "gs://${bucket}/${remote_path}" .
+
+  for file in $(gsutil ls "gs://${bucket}/${remote_path}/**")
+  do
+    echo $file "$(gsutil hash "$file" | grep md5 | awk '{print $3}')" &>> $metadata_path
+  done
+
+  metadata=$(cat $metadata_path \
+    | awk '{print $1,$2}' \
     | jq -R -s '
       try (
         split("\n")[:-1] |
-        [
-          to_entries[] |
-               (select(.value | test("copy")) .value | split(" ") | {operation: .[0], source: .[1], destination: .[3]})
-            // (select(.value | test("remove")) .value | split(" ") | {operation: .[0], file: .[1]})
-            // (select(.value | test("mtime")) .value | split(" ") | {operation: (.[0] + " " + .[1]), file: .[3]})
-            // (select(.value | test("POSIX")) .value | split(" ") | {operation: (.[0] + " " + .[1]), file: .[4]})
-        ] |
-        group_by(.operation) | .[] |
-        map({name: .operation, value: .}) |
-        del(.[].value.operation) | .[]
-      ) catch empty' \
-    | jq -s '. | group_by(.name) | map({"name": .[].name, "value": map(.value) | tostring}) | unique')
+        map([ split(" ")[] | select(. != "") ]) |
+        map({
+          object: .[0],
+          hash: .[1]
+        })
+      ) catch empty')
 
-  gsutil -m rsync -d -r ${dry_run} "gs://${bucket}/${remote_path}" .
+  version=$(cat $metadata_path | $MD5_TOOL | cut -d ' ' -f 1)
+
 popd
 
-echo "{ \"version\": { \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"}, \"metadata\": "$metadata" }" >&3
+echo "{ \"version\": { \"ref\": \"$version\"}, \"metadata\": "$metadata" }" >&3

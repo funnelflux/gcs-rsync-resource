@@ -43,4 +43,11 @@ gcloud auth activate-service-account --key-file="${json_key}" --no-user-output-e
 
 gsutil ls "gs://${bucket}/${remote_path}/**" 1>&2
 
-echo "{ \"ref\": \"$(gsutil ls -la "gs://${bucket}/${remote_path}/**" | $MD5_TOOL | cut -d ' ' -f 1)\"}" | jq --slurp . >&3
+for file in $(gsutil ls "gs://${bucket}/${remote_path}/**")
+do
+  echo $file "$(gsutil hash "$file" | grep md5 | awk '{print $3}')" &>> $TMPDIR/metadata
+done
+
+version=$(cat $TMPDIR/metadata | $MD5_TOOL | cut -d ' ' -f 1)
+
+echo "{ \"ref\": \"$version)\"}" | jq --slurp . >&3
