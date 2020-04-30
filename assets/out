@@ -78,7 +78,7 @@ pushd "${base_dir}"
   unset IFS
 
   metadata=$(cat $metadata_path \
-    | awk '{print $1,$2}' \
+    | awk '{print $3,$4}' \
     | jq -R -s '
       try (
         split("\n")[:-1] |
