@@ -75,10 +75,7 @@ pushd "${base_dir}"
       try (
         split("\n")[:-1] |
         map([ split(" ")[] | select(. != "") ]) |
-        map({
-          object: .[0],
-          hash: .[1]
-        })
+        map( { (.[0]|tostring) : (.[1]|tostring) } )
       ) catch empty')
 
   version=$(cat $metadata_path | $MD5_TOOL | cut -d ' ' -f 1)
