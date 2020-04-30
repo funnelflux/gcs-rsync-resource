@@ -63,15 +63,19 @@ fi
 
 gcloud auth activate-service-account --key-file="${json_key_file}" --no-user-output-enabled
 
+listing=$(mktemp $TMPDIR/gcs-rsync-resource-listing.XXXXXX)
 metadata_path=$(mktemp $TMPDIR/gcs-rsync-resource-metadata.XXXXXX)
 
 pushd "${base_dir}"
   gsutil -m rsync -d -r ${dry_run} . "gs://${bucket}/${remote_path}"
 
-  for file in $(gsutil ls "gs://${bucket}/${remote_path}/**")
+  gsutil ls -l "gs://${bucket}/${remote_path}/**" | grep -v 'TOTAL' &> $listing
+  IFS=$'\n'
+  for file in $(cat $listing)
   do
-    echo $file "$(gsutil hash "$file" | grep md5 | awk '{print $3}')" &>> $metadata_path
+    echo $file "$(gsutil hash $(echo $file | awk '{print $3}') | grep md5 | awk '{print $3}')" &>> $metadata_path
   done
+  unset IFS
 
   metadata=$(cat $metadata_path \
     | awk '{print $1,$2}' \
