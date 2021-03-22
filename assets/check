@@ -21,12 +21,6 @@ if [ -z "$bucket" ]; then
   exit 1
 fi
 
-remote_path=$(jq -r '.source.remote_path // ""' < $payload)
-if [ -z "$remote_path" ]; then
-  echo "invalid payload (missing remote_path)"
-  exit 1
-fi
-
 json_key=$(jq -r '.source.json_key // ""' < $payload)
 if [ -z "$json_key" ]; then
   echo "invalid payload (missing json_key)"
@@ -41,12 +35,12 @@ json_key="$TMPDIR/google_service_account.json"
 
 gcloud auth activate-service-account --key-file="${json_key}" --no-user-output-enabled
 
-gsutil ls "gs://${bucket}/${remote_path}/**" 1>&2
+gsutil ls "gs://${bucket}/**" 1>&2
 
 listing=$(mktemp $TMPDIR/gcs-rsync-resource-listing.XXXXXX)
 metadata_path=$(mktemp $TMPDIR/gcs-rsync-resource-metadata.XXXXXX)
 
-gsutil ls -l "gs://${bucket}/${remote_path}/**" | grep -v 'TOTAL' &> $listing
+gsutil ls -l "gs://${bucket}/**" | grep -v 'TOTAL' &> $listing
 IFS=$'\n'
 for file in $(cat $listing)
 do

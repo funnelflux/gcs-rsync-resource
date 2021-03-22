@@ -6,8 +6,6 @@ Synchronize content of two buckets/directories
 
 * `bucket`: *Required.* The name of the bucket.
 
-* `remote_path`: *Required.* The path to a file or directory.
-
 * `json_key`: *Required.* The contents of your GCS Account JSON Key file to use when accessing the bucket. Example:
   ```
   json_key: |
@@ -24,11 +22,11 @@ Synchronize content of two buckets/directories
 
 ### `check`: Extract versions from the bucket.
 
-The `bucket`'s `remote_path` long listing (including non-current object versions / generations) is used as version.
+The `bucket`'s long listing (including non-current object versions / generations) is used as version.
 
 ### `in`: Fetch the content of the bucket.
 
-Makes the contents of the input directory the same as the contents under `remote_path` by copying any missing or changed files/objects, and deleting any extra files/objects.
+Makes the contents of the input directory the same as the contents `bucket`'s root by copying any missing or changed files/objects, and deleting any extra files/objects.
 
 #### Parameters
 
@@ -37,7 +35,7 @@ Makes the contents of the input directory the same as the contents under `remote
 
 ### `out`: Upload content to the bucket.
 
-Makes the contents under `remote_path` the same as the contents of the input directory by copying any missing or changed files/objects, and deleting any extra files/objects.
+Makes the contents to root of remote bucket the same as the contents of the input directory by copying any missing or changed files/objects, and deleting any extra files/objects.
 
 #### Parameters
 
@@ -58,7 +56,6 @@ resources:
     type: gcs-rsync-resource
     source:
       bucket: mybucket
-      remote_path: terraform/state
       json_key: <GCS-ACCOUNT-JSON-KEY-CONTENTS>
 
 jobs:

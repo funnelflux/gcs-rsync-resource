@@ -25,18 +25,12 @@ payload=$(mktemp $TMPDIR/gcs-rsync-resource-request.XXXXXX)
 cat > $payload <&0
 
 bucket=$(jq -r '.source.bucket // ""' < $payload)
-remote_path=$(jq -r '.source.remote_path // ""' < $payload)
 json_key=$(jq -r '.source.json_key // ""' < $payload)
 base_dir=$(jq -r '.params.base_dir // ""' < $payload)
 dry_run=$(jq -r '.params.dry_run // ""' < $payload)
 
 if [ -z "${bucket}" ]; then
   echo "invalid payload (missing bucket)"
-  exit 1
-fi
-
-if [ -z "${remote_path}" ]; then
-  echo "invalid payload (missing remote_path)"
   exit 1
 fi
 
@@ -67,9 +61,9 @@ listing=$(mktemp $TMPDIR/gcs-rsync-resource-listing.XXXXXX)
 metadata_path=$(mktemp $TMPDIR/gcs-rsync-resource-metadata.XXXXXX)
 
 pushd "${base_dir}"
-  gsutil -m rsync -d -r ${dry_run} . "gs://${bucket}/${remote_path}"
+  gsutil -m rsync -d -r ${dry_run} . "gs://${bucket}"
 
-  gsutil ls -l "gs://${bucket}/${remote_path}/**" | grep -v 'TOTAL' &> $listing
+  gsutil ls -l "gs://${bucket}/**" | grep -v 'TOTAL' &> $listing
   IFS=$'\n'
   for file in $(cat $listing)
   do
